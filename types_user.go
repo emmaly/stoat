@@ -1,7 +1,5 @@
 package stoat
 
-import "encoding/json"
-
 // Presence represents a user's presence status.
 type Presence string
 
@@ -44,7 +42,7 @@ type User struct {
 	Username      string             `json:"username"`
 	Discriminator string             `json:"discriminator"`
 	DisplayName   *string            `json:"display_name,omitempty"`
-	Avatar        *json.RawMessage   `json:"avatar,omitempty"` // TODO: use *File when File type is defined (Phase 4)
+	Avatar        *File              `json:"avatar,omitempty"`
 	Relations     []Relationship     `json:"relations,omitempty"`
 	Badges        uint32             `json:"badges,omitempty"`
 	Status        *UserStatus        `json:"status,omitempty"`
@@ -64,7 +62,7 @@ type UserStatus struct {
 // UserProfile represents a user's profile.
 type UserProfile struct {
 	Content    *string          `json:"content,omitempty"`
-	Background *json.RawMessage `json:"background,omitempty"` // TODO: use *File when File type is defined (Phase 4)
+	Background *File `json:"background,omitempty"`
 }
 
 // Relationship represents a relationship entry with another user.
