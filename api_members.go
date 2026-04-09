@@ -2,7 +2,6 @@ package stoat
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -114,13 +113,12 @@ func (c *Client) FetchBans(ctx context.Context, serverID string) (*BanListResult
 }
 
 // FetchServerInvites fetches all invites for a server. Requires session token.
-// TODO: Use proper Invite type when available (Phase 6).
-func (c *Client) FetchServerInvites(ctx context.Context, serverID string) ([]json.RawMessage, error) {
+func (c *Client) FetchServerInvites(ctx context.Context, serverID string) ([]Invite, error) {
 	req, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/servers/%s/invites", serverID), nil)
 	if err != nil {
 		return nil, err
 	}
-	var resp []json.RawMessage
+	var resp []Invite
 	if err := c.do(req, &resp); err != nil {
 		return nil, err
 	}

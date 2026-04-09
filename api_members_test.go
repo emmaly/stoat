@@ -269,6 +269,12 @@ func TestFetchServerInvites(t *testing.T) {
 		t.Fatalf("FetchServerInvites: %v", err)
 	}
 	if len(invites) != 1 {
-		t.Errorf("invites len = %d", len(invites))
+		t.Fatalf("invites len = %d", len(invites))
+	}
+	if invites[0].ID != "inv01" {
+		t.Errorf("invites[0].ID = %q", invites[0].ID)
+	}
+	if invites[0].Server != "srv01" {
+		t.Errorf("invites[0].Server = %q", invites[0].Server)
 	}
 }
