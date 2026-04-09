@@ -67,19 +67,27 @@ func TestCompleteOnboarding(t *testing.T) {
 		if body.Username != "cooluser" {
 			t.Errorf("username = %q", body.Username)
 		}
-		// Server returns a User object, but we ignore it for now.
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"_id":      "user01",
-			"username": "cooluser",
+			"_id":           "user01",
+			"username":      "cooluser",
+			"discriminator": "0000",
+			"online":        false,
+			"relationship":  "User",
 		})
 	}))
 	defer srv.Close()
 
 	c, _ := New(srv.URL)
 	c.SetSessionToken("sess-tok")
-	err := c.CompleteOnboarding(context.Background(), DataOnboard{Username: "cooluser"})
+	user, err := c.CompleteOnboarding(context.Background(), DataOnboard{Username: "cooluser"})
 	if err != nil {
 		t.Fatalf("CompleteOnboarding: %v", err)
+	}
+	if user.ID != "user01" {
+		t.Errorf("user ID = %q, want user01", user.ID)
+	}
+	if user.Username != "cooluser" {
+		t.Errorf("username = %q, want cooluser", user.Username)
 	}
 }

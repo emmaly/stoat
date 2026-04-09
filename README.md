@@ -1,93 +1,141 @@
-# Stoat API Documentation
+# stoat
 
-Complete, structured documentation of the [Stoat](https://stoat.chat) chat platform API — reverse-engineered from the official OpenAPI v3 spec, developer docs, and WebSocket protocol documentation.
-
-**Goal:** Serve as a comprehensive reference for building a full-coverage Go client library (`stoat-go`).
-
-## API Overview
-
-| Property | Value |
-|----------|-------|
-| API Version | 0.12.0 |
-| Base URL (Production) | `https://stoat.chat/api` |
-| WebSocket URL | `wss://stoat.chat/events` |
-| CDN URL | `https://cdn.stoatusercontent.com` |
-| Proxy URL | `https://external.stoatusercontent.com` |
-| License | AGPLv3 |
-| Spec Format | OpenAPI 3.0.0 |
-| Total REST Endpoints | 83 |
-| Total Schema Types | 139 |
-
-## Documentation Structure
+Go client library for the [Stoat](https://stoat.chat) chat platform API.
 
 ```
-docs/
-├── concepts/
-│   ├── authentication.md      # Auth methods, tokens, headers
-│   ├── permissions.md         # Bitfield permission system
-│   ├── rate-limits.md         # Buckets, headers, retry behavior
-│   └── file-uploads.md        # CDN upload flow
-├── api/
-│   ├── core.md                # Root query, config
-│   ├── account.md             # Account CRUD, email, password
-│   ├── session.md             # Login, logout, session management
-│   ├── mfa.md                 # TOTP, recovery codes, MFA tickets
-│   ├── onboarding.md          # Onboarding flow
-│   ├── users.md               # User info, profiles, usernames
-│   ├── relationships.md       # Friends, blocks
-│   ├── direct-messaging.md    # DM channels
-│   ├── bots.md                # Bot CRUD, invites
-│   ├── servers.md             # Server CRUD, channels
-│   ├── server-members.md      # Members, bans, invites
-│   ├── server-permissions.md  # Roles, permissions
-│   ├── server-customisation.md # Server emoji
-│   ├── channels.md            # Channel CRUD, permissions
-│   ├── messaging.md           # Messages, search, pins, bulk delete
-│   ├── interactions.md        # Reactions
-│   ├── groups.md              # Group channels
-│   ├── voice.md               # Voice/call endpoints
-│   ├── webhooks.md            # Webhook CRUD, execution
-│   ├── invites.md             # Invite fetch, join, delete
-│   ├── emojis.md              # Custom emoji CRUD
-│   ├── sync.md                # Settings, unreads
-│   ├── push.md                # Web push subscribe/unsubscribe
-│   ├── safety.md              # Content reporting
-│   └── policy.md              # Policy acknowledgement
-├── websocket/
-│   ├── connection.md          # Establishing connections
-│   └── events.md              # All WS event types
-├── cdn/
-│   └── file-server.md         # Upload/download, tags, URLs
-├── guides/
-│   └── migration.md           # Revolt → Stoat migration
-└── types/
-    └── schemas.md             # All 139 data types
+go get github.com/emmaly/stoat
 ```
 
-## Quick Links
+## Coverage
 
-- [Authentication](docs/concepts/authentication.md)
-- [REST API Endpoints](docs/api/)
-- [WebSocket Events](docs/websocket/events.md)
-- [Data Types](docs/types/schemas.md)
-- [Migration Guide](docs/guides/migration.md)
+| Area | Coverage |
+|------|----------|
+| REST API | 121 endpoints across 21 endpoint groups |
+| Data Types | 139 schema types (including tagged unions) |
+| WebSocket | 40 event types, connection management, event dispatch |
+| CDN | File upload/download, tag constants |
 
-## Sources
+Targets Stoat API v0.12.0. Built clean-room from the [OpenAPI spec](docs/OpenAPI.json) and [developer docs](https://developers.stoat.chat).
 
-- [Stoat Developer Docs](https://developers.stoat.chat)
-- [OpenAPI Spec](https://github.com/stoatchat/javascript-client-api/blob/main/OpenAPI.json)
-- [Stoat Backend Source](https://github.com/stoatchat/stoatchat)
-- [Official JS SDK](https://github.com/stoatchat/javascript-client-sdk)
-- [Official Python SDK](https://github.com/stoatchat/python-client-sdk)
+## Quick Start
 
-## Existing Libraries
+```go
+package main
 
-| Language | Library | URL |
-|----------|---------|-----|
-| JavaScript | stoat.js (official) | npm |
-| Python | stoat.py (official) | [GitHub](https://github.com/stoatchat/python-client-sdk) |
-| Go | revoltgo | GitHub |
-| Rust | Rive, Seria, Stoat-rs | crates.io / GitHub |
-| C# | Revolt.NET, StoatSharp | NuGet / GitHub |
-| Swift | RevoltKit | GitHub |
-| C | Ermine | Codeberg |
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/emmaly/stoat"
+)
+
+func main() {
+    c, err := stoat.New("https://stoat.chat/api")
+    if err != nil {
+        log.Fatal(err)
+    }
+    c.SetBotToken("your-bot-token")
+
+    // Fetch server config
+    cfg, err := c.QueryNode(context.Background())
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("API version:", cfg.Revolt)
+    fmt.Println("WebSocket:", cfg.WS)
+}
+```
+
+## Authentication
+
+```go
+// Bot token (no expiry, no session management)
+c.SetBotToken("bot-token-from-settings")
+
+// User session (obtained via login)
+resp, err := c.Login(ctx, stoat.DataLogin{
+    Email:    "user@example.com",
+    Password: "password",
+})
+// resp is a stoat.ResponseLogin — type-switch on the variant:
+switch v := resp.(type) {
+case *stoat.LoginSuccess:
+    c.SetSessionToken(v.Token)
+case *stoat.LoginMFA:
+    // Handle MFA flow with v.Ticket
+}
+```
+
+## WebSocket Events
+
+```go
+import "github.com/emmaly/stoat/ws"
+
+conn, err := ws.Dial(ctx, "wss://stoat.chat/events", "your-token")
+if err != nil {
+    log.Fatal(err)
+}
+defer conn.Close()
+
+// Implement ws.EventHandler (or embed ws.DefaultEventHandler)
+type myHandler struct{ ws.DefaultEventHandler }
+
+func (h *myHandler) OnMessage(e ws.MessageEvent) {
+    fmt.Printf("[%s] %s: %s\n", e.Channel, e.Author, *e.Content)
+}
+
+conn.Listen(ctx, &myHandler{})
+```
+
+## CDN File Uploads
+
+```go
+import "github.com/emmaly/stoat/cdn"
+
+cdnClient, _ := cdn.New("https://cdn.stoatusercontent.com")
+cdnClient.SetBotToken("your-bot-token")
+
+fileID, err := cdnClient.Upload(ctx, cdn.TagAttachments, "photo.png", file)
+// Use fileID in message attachments
+```
+
+## Packages
+
+| Package | Import | Description |
+|---------|--------|-------------|
+| `stoat` | `github.com/emmaly/stoat` | REST client, all API types |
+| `stoat/ws` | `github.com/emmaly/stoat/ws` | WebSocket connection and events |
+| `stoat/cdn` | `github.com/emmaly/stoat/cdn` | CDN file upload/download |
+
+## Tagged Unions
+
+Several API types are discriminated unions represented as Go interfaces:
+
+| Type | Discriminator | Variants |
+|------|---------------|----------|
+| `Channel` | `channel_type` | SavedMessages, DirectMessage, Group, TextChannel, VoiceChannel |
+| `Embed` | `type` | Website, Image, Video, Text, None |
+| `SystemMessage` | `type` | 14 variants (text, user_added, user_joined, etc.) |
+| `Metadata` | `type` | File, Text, Image, Video, Audio |
+| `ResponseLogin` | `result` | Success, MFA, Disabled |
+| `InviteResponse` | `type` | Server |
+| `InviteJoinResponse` | `type` | Server |
+| `EmojiParent` | `type` | Server, Detached |
+
+Use `Raw*` wrapper types (e.g., `RawChannel`) for JSON unmarshaling, then access `.Value` for the interface.
+
+## API Documentation
+
+Full API documentation is in [`docs/`](docs/):
+
+- [`docs/concepts/`](docs/concepts/) — Authentication, permissions, rate limits, file uploads
+- [`docs/api/`](docs/api/) — All REST endpoint documentation
+- [`docs/websocket/`](docs/websocket/) — WebSocket connection and event protocol
+- [`docs/cdn/`](docs/cdn/) — CDN file server
+- [`docs/types/`](docs/types/) — All 139 data type schemas
+- [`docs/guides/`](docs/guides/) — Revolt to Stoat migration guide
+
+## License
+
+AGPLv3 — matching the Stoat platform license.

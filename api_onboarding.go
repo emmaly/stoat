@@ -20,13 +20,15 @@ func (c *Client) CheckOnboarding(ctx context.Context) (*DataHello, error) {
 }
 
 // CompleteOnboarding completes the onboarding process by choosing a username.
-// Requires session token.
-//
-// TODO: Update return type to *User when User type is added in Phase 3.
-func (c *Client) CompleteOnboarding(ctx context.Context, data DataOnboard) error {
+// Requires session token. Returns the created user.
+func (c *Client) CompleteOnboarding(ctx context.Context, data DataOnboard) (*User, error) {
 	req, err := c.request(ctx, http.MethodPost, "/onboard/complete", data)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return c.do(req, nil)
+	var user User
+	if err := c.do(req, &user); err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
