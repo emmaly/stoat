@@ -47,21 +47,22 @@ func TestFetchDMs(t *testing.T) {
 		t.Fatalf("len = %d, want 2", len(channels))
 	}
 
-	// Verify we can unmarshal the raw messages
-	var ch0 map[string]any
-	if err := json.Unmarshal(channels[0], &ch0); err != nil {
-		t.Fatalf("unmarshal ch0: %v", err)
+	if channels[0].ChannelType() != "SavedMessages" {
+		t.Errorf("ch0 type = %q", channels[0].ChannelType())
 	}
-	if ch0["channel_type"] != "SavedMessages" {
-		t.Errorf("ch0 channel_type = %v", ch0["channel_type"])
+	if channels[0].ChannelID() != "ch01" {
+		t.Errorf("ch0 id = %q", channels[0].ChannelID())
 	}
 
-	var ch1 map[string]any
-	if err := json.Unmarshal(channels[1], &ch1); err != nil {
-		t.Fatalf("unmarshal ch1: %v", err)
+	dm, ok := channels[1].(*DirectMessageChannel)
+	if !ok {
+		t.Fatalf("ch1 type = %T, want *DirectMessageChannel", channels[1])
 	}
-	if ch1["channel_type"] != "DirectMessage" {
-		t.Errorf("ch1 channel_type = %v", ch1["channel_type"])
+	if dm.ID != "ch02" {
+		t.Errorf("ch1 id = %q", dm.ID)
+	}
+	if !dm.Active {
+		t.Error("ch1 expected active = true")
 	}
 }
 
@@ -94,14 +95,14 @@ func TestOpenDM(t *testing.T) {
 		t.Fatalf("OpenDM: %v", err)
 	}
 
-	var m map[string]any
-	if err := json.Unmarshal(ch, &m); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+	dm, ok := ch.(*DirectMessageChannel)
+	if !ok {
+		t.Fatalf("type = %T, want *DirectMessageChannel", ch)
 	}
-	if m["channel_type"] != "DirectMessage" {
-		t.Errorf("channel_type = %v", m["channel_type"])
+	if dm.ID != "ch02" {
+		t.Errorf("id = %q", dm.ID)
 	}
-	if m["_id"] != "ch02" {
-		t.Errorf("_id = %v", m["_id"])
+	if dm.ChannelType() != "DirectMessage" {
+		t.Errorf("ChannelType = %q", dm.ChannelType())
 	}
 }
