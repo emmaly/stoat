@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+
 // Message represents a message in a channel.
 type Message struct {
 	ID           string                `json:"_id"`
@@ -12,7 +13,7 @@ type Message struct {
 	Channel      string                `json:"channel"`
 	Author       string                `json:"author"`
 	User         *User                 `json:"user,omitempty"`
-	Member       *json.RawMessage      `json:"member,omitempty"` // TODO: use *Member in Phase 5
+	Member       *Member                `json:"member,omitempty"`
 	Webhook      *MessageWebhook       `json:"webhook,omitempty"`
 	Content      *string               `json:"content,omitempty"`
 	System       *RawSystemMessage     `json:"system,omitempty"`
@@ -558,7 +559,7 @@ const (
 type BulkMessageResponse struct {
 	Messages []Message          `json:"messages"`
 	Users    []User             `json:"users,omitempty"`
-	Members  []json.RawMessage  `json:"members,omitempty"` // TODO: []Member in Phase 5
+	Members  []Member            `json:"members,omitempty"`
 }
 
 // OptionsBulkDelete is the request body for bulk deleting messages.
